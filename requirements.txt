@@ -1,5 +1,5 @@
 flask
-tensorflow
+tflite-runtime
 scikit-learn==1.7.1
 joblib
 pandas

@@ -4,23 +4,22 @@ import numpy as np
 import pandas as pd
 import librosa
 import joblib
-import tensorflow as tf
+# --- CHANGE: Import tflite_runtime instead of the full tensorflow ---
+import tflite_runtime.interpreter as tflite
 import parselmouth
 from parselmouth.praat import call
 from pydub import AudioSegment
 import warnings
-import base64
 import json
 
-# --- Basic Setup ---
+# --- Basic Setup (Unchanged) ---
 app = Flask(__name__)
 app.secret_key = 'a-very-secret-key-for-your-session'
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 warnings.filterwarnings('ignore')
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-# --- Configuration ---
+# --- Configuration (Unchanged) ---
 class Config:
     SAMPLE_RATE = 44100
     N_MELS_CRNN = 128
@@ -28,36 +27,16 @@ class Config:
     N_MFCC_RF = 13
 config = Config()
 
-# --- Task Details Dictionary ---
+# --- Task Details (Unchanged) ---
 TASK_DETAILS = {
-    'task1_picture': {"title": "Picture Description"},
-    'task2_memorize': {"title": "Word Memorization"},
-    'task3_animals': {"title": "Category Fluency (Animals)"},
-    'task4_tapping': {"title": "Finger Tapping"},
-    'task4_memory_recall': {"title": "Memory Recall"},
-    'task5_vowel': {"title": "Sustained Vowel"},
-    'task6_articulation': {"title": "Pa-Ta-Ka Repetition"},
-    'task6_rainbow': {"title": "Rainbow Passage Reading"},
-    'task7_story': {"title": "Storytelling Recall"},
-    'task8_emotion': {"title": "Emotion Recognition"},
+    'task1_picture': {"title": "Picture Description"},'task2_memorize': {"title": "Word Memorization"},
+    'task3_animals': {"title": "Category Fluency (Animals)"},'task4_tapping': {"title": "Finger Tapping"},
+    'task4_memory_recall': {"title": "Memory Recall"},'task5_vowel': {"title": "Sustained Vowel"},
+    'task6_articulation': {"title": "Pa-Ta-Ka Repetition"},'task6_rainbow': {"title": "Rainbow Passage Reading"},
+    'task7_story': {"title": "Storytelling Recall"},'task8_emotion': {"title": "Emotion Recognition"},
 }
 
-# --- Load Models and Assets ---
-# (Your model loading code is correct and does not need changes)
-try:
-    print("Loading models and assets...")
-    crnn_model = tf.keras.models.load_model('crnn_model.h5')
-    rf_model = joblib.load('random_forest_model.joblib')
-    scaler = joblib.load('audio_scaler.joblib')
-    label_encoder = joblib.load('label_encoder.joblib')
-    rf_feature_cols = joblib.load('rf_feature_columns.joblib')
-    print("✅ All components loaded successfully!")
-except Exception as e:
-    print(f"❌ Error loading files: {e}")
-
-
-# --- Feature Extraction & Prediction Logic (Unchanged) ---
-# (Your run_prediction, extract_features_for_rf, etc. are correct)
+# --- Feature Extraction (Unchanged) ---
 def extract_features_for_rf(wav_path):
     features = {}
     try:
@@ -80,8 +59,7 @@ def extract_features_for_rf(wav_path):
         features['spectral_centroid'] = np.mean(librosa.feature.spectral_centroid(y=y, sr=sr))
         features['spectral_rolloff'] = np.mean(librosa.feature.spectral_rolloff(y=y, sr=sr))
         for key, value in features.items():
-            if np.isnan(value) or np.isinf(value):
-                features[key] = 0
+            if np.isnan(value) or np.isinf(value): features[key] = 0
         return features
     except Exception:
         return None
@@ -100,15 +78,45 @@ def extract_spectrogram_for_crnn(wav_path):
     except Exception:
         return None
 
+# --- CHANGE: Load the new .tflite model ---
+try:
+    print("Loading models and assets...")
+    # Load the TFLite model and allocate tensors.
+    crnn_model = tflite.Interpreter(model_path='crunn_model.tflite')
+    crnn_model.allocate_tensors()
+    # Get input and output details.
+    crnn_input_details = crnn_model.get_input_details()
+    crnn_output_details = crnn_model.get_output_details()
+    
+    # Load the other models as before
+    rf_model = joblib.load('random_forest_model.joblib')
+    scaler = joblib.load('audio_scaler.joblib')
+    label_encoder = joblib.load('label_encoder.joblib')
+    rf_feature_cols = joblib.load('rf_feature_columns.joblib')
+    print("✅ All components loaded successfully!")
+except Exception as e:
+    print(f"❌ Error loading files: {e}")
+
+# --- CHANGE: Update run_prediction to use the TFLite model ---
 def run_prediction(wav_path):
     rf_features = extract_features_for_rf(wav_path)
     crnn_spec = extract_spectrogram_for_crnn(wav_path)
     if rf_features is None or crnn_spec is None: return None
+
+    # --- Random Forest Prediction (no change) ---
     rf_df = pd.DataFrame([rf_features], columns=rf_feature_cols)
     rf_scaled = scaler.transform(rf_df)
     rf_probs = rf_model.predict_proba(rf_scaled)[0]
-    crnn_reshaped = np.expand_dims(crnn_spec, axis=0)
-    crnn_probs = crnn_model.predict(crnn_reshaped, verbose=0)[0]
+
+    # --- TFLite CRNN Prediction (new logic) ---
+    crnn_input_data = crnn_spec.astype(np.float32)
+    crnn_input_data = np.expand_dims(crnn_input_data, axis=0)
+    
+    crnn_model.set_tensor(crnn_input_details[0]['index'], crnn_input_data)
+    crnn_model.invoke()
+    crnn_probs = crnn_model.get_tensor(crnn_output_details[0]['index'])[0]
+
+    # --- Ensemble and Final Result (no change) ---
     ensemble_probs = (rf_probs + crnn_probs) / 2.0
     pred_idx = int(np.argmax(ensemble_probs))
     pred_label = label_encoder.classes_[pred_idx]
@@ -119,7 +127,8 @@ def run_prediction(wav_path):
         'probs': {label_encoder.classes_[i]: float(prob) for i, prob in enumerate(ensemble_probs)}
     }
 
-# --- Main Routes ---
+# --- All Flask Routes remain the same ---
+# (The rest of your app.py file is correct and does not need changes)
 @app.route('/')
 def index():
     session.clear()
@@ -154,7 +163,6 @@ def predict():
         if os.path.exists(in_path): os.remove(in_path)
         if os.path.exists(wav_path): os.remove(wav_path)
 
-# --- Routes for Guided Task System ---
 @app.route('/start_session')
 def start_session():
     session['task_results'] = {}
@@ -166,7 +174,6 @@ def serve_task_statically(filename):
 
 @app.route('/api/process_task_audio', methods=['POST'])
 def process_task_audio():
-    # (This function is correct from the last fix)
     task_id_str = request.form.get('task_id_str')
     audio_file = request.files.get('audio_blob')
     if not task_id_str or not audio_file:
@@ -193,7 +200,6 @@ def process_task_audio():
 
 @app.route('/api/save_task_result', methods=['POST'])
 def save_task_result():
-    # (This function is correct)
     task_id_str = request.form.get('task_id_str')
     payload = request.form.get('payload')
     if not task_id_str or not payload:
@@ -206,7 +212,6 @@ def save_task_result():
     
 @app.route('/generate_report')
 def generate_report():
-    # (This function is correct)
     task_results = session.get('task_results', {})
     if not task_results:
         return redirect(url_for('index'))
@@ -239,7 +244,6 @@ def generate_report():
     session['analysis_result'] = final_report
     return redirect(url_for('report_page'))
 
-# --- FIX: Add helper routes for static assets from unchanged task files ---
 @app.route('/styles.css')
 def serve_styles():
     return send_from_directory('static', 'styles.css')
@@ -251,7 +255,6 @@ def serve_app_js():
 @app.route('/assets/<path:subpath>')
 def serve_assets(subpath):
     return send_from_directory('static/assets', subpath)
-# --- End of Fix ---
 
 if __name__ == '__main__':
     app.run(debug=True)
