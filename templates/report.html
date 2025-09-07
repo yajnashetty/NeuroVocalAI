@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Screening Report</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <a class="link" href="{{ url_for('index') }}">← Home</a>
+      <div style="font-weight:700">Screening Report</div>
+    </div>
+
+    <div class="card task-card">
+      <h2>Session Summary</h2>
+      <div id="finalResult" class="result-header"></div>
+      <div id="confidence" class="conf"></div>
+
+      <div class="chart-container" style="max-width: 500px; margin: 20px auto;">
+        <canvas id="probChart"></canvas>
+      </div>
+
+      <h3>Per-Task Results</h3>
+      <table class="table" id="taskTable">
+        </table>
+    </div>
+  </div>
+
+<script>
+    // Get data from the Flask session
+    const resultData = {{ result | tojson }};
+
+    if (!resultData || !resultData.label) {
+        document.getElementById("finalResult").innerHTML = "No valid results found. Please go back and analyze again.";
+    } else {
+        // --- Populate Final Summary ---
+        document.getElementById("finalResult").innerHTML =
+            `Final Result: <span class="highlight">${resultData.label.toUpperCase()}</span>`;
+        document.getElementById("confidence").innerText =
+            `Confidence: ${resultData.confidence.toFixed(1)}%`;
+
+        // --- Populate Chart (if probability data exists) ---
+        const ctx = document.getElementById("probChart").getContext("2d");
+        if (resultData.probs) {
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(resultData.probs),
+                    datasets: [{
+                        label: 'Condition Probability',
+                        data: Object.values(resultData.probs).map(p => p * 100),
+                        backgroundColor: '#60a5fa',
+                        borderRadius: 5,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { beginAtZero: true, max: 100, ticks: { callback: value => value + "%" } } }
+                }
+            });
+        } else {
+            document.querySelector('.chart-container').style.display = 'none';
+        }
+
+        // --- NEW: Populate Per-Task Results Table Intelligently ---
+        const table = document.getElementById("taskTable");
+        let tableContent = '<tr><th>#</th><th>Task</th><th colspan="2">Result</th></tr>'; // Modified header
+        
+        if (resultData.tasks && resultData.tasks.length > 0) {
+            resultData.tasks.forEach((task, index) => {
+                let resultCell = '<td>N/A</td><td>N/A</td>'; // Default for unknown tasks
+
+                if (task.label && task.confidence) {
+                    // This is an audio prediction result
+                    resultCell = `<td>${task.label}</td><td>${task.confidence.toFixed(1)}%</td>`;
+                } else if (task.count) {
+                    // This is a finger tapping result
+                    resultCell = `<td colspan="2">${task.count} taps recorded</td>`;
+                } else if (task.words) {
+                    // This is a word memorization result
+                    resultCell = `<td colspan="2">Task Completed</td>`;
+                } else if (task.answers) {
+                    // This is an emotion recognition result
+                    resultCell = `<td colspan="2">Answers saved</td>`;
+                }
+
+                tableContent += `<tr>
+                    <td>${index + 1}</td>
+                    <td>${task.title}</td>
+                    ${resultCell}
+                </tr>`;
+            });
+             // Change the header to match the new format
+            table.innerHTML = tableContent.replace('<th>Predicted</th><th>Conf.</th>', '<th colspan="2">Result</th>');
+        } else {
+             tableContent += '<tr><td colspan="4">No per-task results available.</td></tr>';
+        }
+        table.innerHTML = tableContent;
+    }
+</script>
+</body>
+</html>

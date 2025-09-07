@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Task 1 — Picture Description (Language + Cognition)</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <style>
+    .btn { margin: 5px; padding: 8px 16px; cursor: pointer; }
+    .secondary { background-color: #f0f0f0; }
+    .notice { font-size: 0.9em; color: #555; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <a class="link" href="../index.html">← Home</a>
+      <div style="min-width:220px;flex:1"></div>
+      <div style="font-weight:700">Task 1 of 8</div>
+    </div>
+
+    <div class="progress"><div style="width:12%"></div></div>
+    <div class="card task-card">
+      <h2>Picture Description</h2>
+      <p class="instructions"><b>Look at the image and describe what is happening. Record your answer below.</b></p>
+
+      <div class="input-area">
+        <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+
+          <!-- Image -->
+          <img src="../assets/img/cookiee_theft.png" 
+               alt="Cookie Theft Picture" 
+               style="width:450px;height:auto;border-radius:16px;border:1px solid #e5e7eb;background:#fff"/>
+
+          <!-- Recording controls -->
+          <div>
+            <div class="controls">
+              <button class="btn" id="startRec">Start Recording</button>
+              <button class="btn secondary" id="stopRec" disabled>Stop</button>
+              <button class="btn secondary" id="saveRec" disabled>Save</button>
+            </div>
+
+            <!-- Timer + progress bar -->
+            <div style="margin-top:8px">
+              <progress id="recProgress" value="0" max="60" style="width:200px"></progress>
+              <span id="recTimer">0s</span>
+            </div>
+
+            <p id="recStatus" class="notice"></p>
+            <audio id="playback" controls style="display:none"></audio>
+            <p class="notice">Your recording stays in your browser unless you download it.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="btn secondary" onclick="window.location='task2.html'">Next Task →</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../app.js"></script>
+<script>
+    // --- All this code is now correct ---
+    const startBtn = document.getElementById('startRec');
+    const stopBtn  = document.getElementById('stopRec');
+    const saveBtn  = document.getElementById('saveRec');
+    const playback = document.getElementById('playback');
+    const statusEl = document.getElementById('recStatus');
+    const timerEl  = document.getElementById('recTimer');
+    const progressEl = document.getElementById('recProgress');
+
+    // Use the MicRecorder from our app.js file
+    let rec = new MicRecorder(progressEl, timerEl);
+    let recData = null;
+
+    startBtn.onclick = async () => {
+      await rec.start();
+      statusEl.textContent = "🎙 Recording...";
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      saveBtn.disabled = true;
+    };
+
+    stopBtn.onclick = async () => {
+      recData = await rec.stop();
+      if (recData) {
+        playback.src = recData.url;
+        playback.style.display = "block";
+        statusEl.textContent = `Recording stopped (${recData.durSec}s).`;
+        saveBtn.disabled = false;
+      }
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    };
+
+    // THIS IS THE FIX. It now calls the functions in app.js to upload the data.
+    saveBtn.onclick = () => {
+      if (recData) {
+        setResult('task1_picture', { durSec: recData.durSec });
+        downloadBlob(recData.blob, 'task1_picture.webm');
+        statusEl.textContent = "✅ Result saved to session!";
+      } else {
+        alert('Please record first.');
+      }
+    };
+</script>
+</body>
+</html>

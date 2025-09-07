@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en" data-automic="true">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Task 3 — Category Fluency</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <a class="link" href="../index.html">← Home</a>
+      <div style="min-width:220px;flex:1"></div>
+      <div style="font-weight:700">Task 3 of 8</div>
+    </div>
+
+    <div class="progress"><div style="width:37%"></div></div>
+    <div class="card task-card">
+      <h2>Category Fluency Test</h2>
+      <p class="instructions"><b>For 60 seconds, name as many <u>animals</u> as you can. Recording will automatically stop.</b></p>
+
+      <div class="input-area">
+        <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+
+          <!-- Recording controls -->
+          <div>
+            <div class="controls">
+              <button class="btn" id="startRec">Start Recording</button>
+              <button class="btn secondary" id="stopRec" disabled>Stop</button>
+              <button class="btn secondary" id="saveRec" disabled>Save</button>
+            </div>
+
+            <!-- Timer + progress bar -->
+            <div style="margin-top:8px">
+              <progress id="recProgress" value="0" max="60" style="width:200px"></progress>
+              <span id="recTimer">0s</span>
+            </div>
+
+            <p id="recStatus" class="notice"></p>
+            <audio id="playback" controls style="display:none"></audio>
+            <p class="notice">Your recording stays in your browser unless you download it.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="btn secondary" onclick="navTo('task4.html')">Next Task →</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../app.js"></script>
+  <script>
+    const startBtn = qi('startRec');
+    const stopBtn  = qi('stopRec');
+    const saveBtn  = qi('saveRec');
+    const playback = qi('playback');
+    const statusEl = qi('recStatus');
+    const timerEl  = qi('recTimer');
+    const progressEl = qi('recProgress');
+
+    let rec = new MicRecorder(progressEl, timerEl);
+    let recData = null;
+    let timerInterval = null;
+    let elapsed = 0;
+
+    startBtn.onclick = async () => {
+      await rec.start();
+      statusEl.textContent = "🎙 Recording... ";
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      elapsed = 0;
+      progressEl.value = 0;
+      timerEl.textContent = "0s";
+
+      // Timer updates
+      timerInterval = setInterval(async () => {
+        elapsed++;
+        progressEl.value = elapsed;
+        timerEl.textContent = elapsed + "s";
+
+        if (elapsed >= 60) {
+          clearInterval(timerInterval);
+          await autoStop();
+        }
+      }, 1000);
+    };
+
+    async function autoStop() {
+      recData = await rec.stop();
+      if (recData) {
+        playback.src = recData.url;
+        playback.style.display = "block";
+        statusEl.textContent = `⏱️ Recording stopped automatically at 60s.`;
+        saveBtn.disabled = false;
+      }
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    }
+
+    stopBtn.onclick = async () => {
+      clearInterval(timerInterval);
+      await autoStop();
+    };
+
+    saveBtn.onclick = () => {
+      if (recData) {
+        setResult('task3_animals', { durSec: recData.durSec });
+        downloadBlob(recData.blob, 'task3_animals.webm');
+      } else {
+        alert('Please record first.');
+      }
+    };
+  </script>
+</body>
+</html>

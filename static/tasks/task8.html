@@ -1,0 +1,80 @@
+
+<!DOCTYPE html>
+<html lang="en" data-automic="true">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Task 8 — Emotion Prosody Discrimination</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <a class="link" href="../index.html">← Home</a>
+      <div style="min-width:220px;flex:1"></div>
+      <div style="font-weight:700">Task 8 of 8</div>
+    </div>
+    <div class="progress"><div style="width:100%"></div></div>
+    <div class="card task-card">
+      <h2>Emotion Recognition Test</h2>
+      <p class="instructions"><b>Follow the instructions below, then record or interact as asked. When done, click Save and then Next Task.</b></p>
+      
+<div class="input-area">
+  <p>Listen to each clip and select which emotion the voice is expressing.</p>
+  <table class="table">
+    <tr><th>Clip</th><th>Play</th><th>Your Answer</th></tr>
+    <tr>
+      <td>Clip 1</td>
+      <td><audio src="../assets/audio/emotions/clip1.mp3" controls></audio></td>
+      <td>
+        <select id="a1">
+          <option value="">Select</option>
+          <option>happy</option>
+          <option>sad</option>
+          <option>angry</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td>Clip 2</td>
+      <td><audio src="../assets/audio/emotions/clip2.mp3" controls></audio></td>
+      <td>
+        <select id="a2">
+          <option value="">Select</option>
+          <option>happy</option>
+          <option>sad</option>
+          <option>angry</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td>Clip 3</td>
+      <td><audio src="../assets/audio/emotions/clip3.mp3" controls></audio></td>
+      <td>
+        <select id="a3">
+          <option value="">Select</option>
+          <option>happy</option>
+          <option>sad</option>
+          <option>angry</option>
+        </select>
+      </td>
+    </tr>
+  </table>
+</div>
+<div class="controls">
+  <button class="btn" id="save">Save Answers</button>
+  <button class="btn" onclick="navTo('/generate_report')">Finish → Report</button>
+</div>
+<script>
+qi('save').onclick = ()=>{
+  const answers = [qi('a1').value, qi('a2').value, qi('a3').value];
+  setResult('task8_emotion', {answers});
+  alert('Saved. Click Finish → Report.');
+};
+</script>
+
+    </div>
+  </div>
+  <script src="../app.js"></script>
+</body>
+</html>

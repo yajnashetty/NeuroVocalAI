@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>NeuroVocal AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+<div class="container">
+    <div class="hero">
+        <div class="badge">NeuroVocal AI</div>
+        <div class="h1">AI-Driven Speech Processing for Early Detection of Cognitive & Psychological Disorders</div>
+        <p class="lead">Do quick, guided voice tasks or upload audio files. Results show screening across Alzheimer’s, Parkinson’s, Depression, and Healthy.</p>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='brain_signal.png') }}" alt="NeuroVocal AI Logo">
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="card">
+            <h2>Upload Audio Files</h2>
+            <p>Already have recordings? Upload .wav/.mp3 files and see the overall screening result.</p>
+            <div class="upload">
+                <input type="file" id="audioFile" accept="audio/*" />
+                <button class="btn secondary" id="analyzeBtn">Analyze Uploaded Files</button>
+            </div>
+        </div>
+        <div class="card">
+            <h2>Guided Tasks</h2>
+            <p>Each task shows instructions. Use <b>Start</b> and <b>Stop</b>, then click <b>Next Task</b>.</p>
+            <a href="{{ url_for('start_session') }}" class="btn">Begin Session</a>
+        </div>
+    </div>
+
+    <div class="card task-card">
+      <h2>Orientation & Instructions</h2>
+      <p class="instructions">This is a short screening test with <b>{{ TASK_DETAILS|length }} tasks</b>. It is not a diagnosis, but it may help identify early signs of memory, movement, or mood-related disorders.</p>
+    </div>
+</div>
+
+<script>
+    document.getElementById('analyzeBtn').addEventListener('click', () => {
+        const fileInput = document.getElementById('audioFile');
+        if (fileInput.files.length === 0) {
+            alert("Please select an audio file first.");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('audio', fileInput.files[0]);
+
+        // Optional: Show a loading state on the button
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        analyzeBtn.textContent = 'Analyzing...';
+        analyzeBtn.disabled = true;
+
+        fetch("{{ url_for('predict') }}", {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url; // Follow redirect to the report page
+            } else {
+                alert('An error occurred. Please try again.');
+                analyzeBtn.textContent = 'Analyze Uploaded Files';
+                analyzeBtn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('A network error occurred.');
+            analyzeBtn.textContent = 'Analyze Uploaded Files';
+            analyzeBtn.disabled = false;
+        });
+    });
+</script>
+</body>
+</html>

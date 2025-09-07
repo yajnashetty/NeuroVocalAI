@@ -1,0 +1,10 @@
+# Python virtual environment
+venv/
+__pycache__/
+
+# Temporary upload folder
+uploads/
+
+# IDE/Editor folders
+.vscode/
+.idea/

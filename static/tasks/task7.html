@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en" data-automic="true">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Task 7 — Storytelling / Narrative Recall</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <a class="link" href="../index.html">← Home</a>
+      <div style="min-width:220px;flex:1"></div>
+      <div style="font-weight:700">Task 7 of 8</div>
+    </div>
+    <div class="progress"><div style="width:87%"></div></div>
+    <div class="card task-card">
+      <h2>Storytelling Recall Test</h2>
+      <p class="instructions"><b>Follow the instructions below, then record or interact as asked. When done, click Save and then Next Task.</b></p>
+
+      <div class="input-area">
+        <p>Look at the picture and describe the story in your own words.</p>
+        <img src="../assets/img/image_1.jpg" 
+             alt="Comic" 
+             style="width:450px;height:auto;border-radius:12px; border:1px solid #e5e7eb;background:#fff"/>
+
+        <div class="controls" style="margin-top:16px">
+          <button class="btn" id="startRec">Start Recording</button>
+          <button class="btn secondary" id="stopRec" disabled>Stop</button>
+          <button class="btn secondary" id="saveRec" disabled>Save</button>
+        </div>
+
+        <div style="margin-top:8px">
+          <progress id="recProgress" value="0" max="60" style="width:200px"></progress>
+          <span id="recTimer">0s</span>
+        </div>
+
+        <p id="recStatus" class="notice"></p>
+        <audio id="playback" controls style="display:none"></audio>
+      </div>
+
+      <div class="controls">
+        <button class="btn secondary" onclick="navTo('task8.html')">Next Task →</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../app.js"></script>
+  
+  <script>
+    const startBtn = qi('startRec');
+    const stopBtn  = qi('stopRec');
+    const saveBtn  = qi('saveRec');
+    const playback = qi('playback');
+    const statusEl = qi('recStatus');
+    const timerEl  = qi('recTimer');
+    const progressEl = qi('recProgress');
+
+    // Use the MicRecorder from our central app.js file
+    let rec = new MicRecorder(progressEl, timerEl);
+    let recData = null;
+
+    startBtn.onclick = async () => {
+      await rec.start();
+      statusEl.textContent = "🎙 Recording...";
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      saveBtn.disabled = true;
+    };
+
+    stopBtn.onclick = async () => {
+      recData = await rec.stop();
+      if (recData) {
+        playback.src = recData.url;
+        playback.style.display = "block";
+        statusEl.textContent = `Recording stopped (${recData.durSec}s).`;
+        saveBtn.disabled = false;
+      }
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    };
+
+    // THIS IS THE FIX: This now correctly calls the functions from app.js to upload the data.
+    saveBtn.onclick = () => {
+      if (recData) {
+        setResult('task7_story', { durSec: recData.durSec });
+        downloadBlob(recData.blob, 'task7_story.webm');
+        statusEl.textContent = "✅ Result saved to session!";
+      } else {
+        alert('Please record first.');
+      }
+    };
+  </script>
+</body>
+</html>

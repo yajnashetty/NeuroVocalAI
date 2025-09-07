@@ -1,0 +1,44 @@
+
+<!DOCTYPE html>
+<html lang="en" data-automic="true">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Task 2 — Delayed Word Recall (Memory)</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <a class="link" href="../index.html">← Home</a>
+      <div style="min-width:220px;flex:1"></div>
+      <div style="font-weight:700">Task 2 of 8</div>
+    </div>
+    <div class="progress"><div style="width:25%"></div></div>
+    <div class="card task-card">
+      <h2>Delayed Word Recall Test</h2>
+      <p class="instructions"> <b>Follow the instructions below, then record or interact as asked. When done, click Save and then Next Task.</b></p>
+      
+<div class="input-area">
+  <p>Memorize these 5 words.</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <span class="badge">apple</span><span class="badge">chair</span><span class="badge">coin</span><span class="badge">river</span><span class="badge">shoe</span>
+  </div>
+  <p class="notice">Spend ~20–30 seconds memorizing.</p>
+</div>
+<div class="controls">
+  <button class="btn" id="ack">I’ve Memorized</button>
+  <button class="btn secondary" onclick="navTo('task3.html')">Next Task →</button>
+</div>
+<script>
+document.getElementById('ack').onclick = ()=>{
+  setResult('task2_memorize', {words:['apple','chair','coin','river','shoe']});
+  alert('Great! Continue to next tasks; recall will happen soon.');
+};
+</script>
+
+    </div>
+  </div>
+  <script src="../app.js"></script>
+</body>
+</html>

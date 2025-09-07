@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en" data-automic="true">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Task 4 — Finger Tapping Test (Motor + Memory Recall)</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <a class="link" href="../index.html">← Home</a>
+      <div style="min-width:220px;flex:1"></div>
+      <div style="font-weight:700">Task 4 of 8</div>
+    </div>
+
+    <div class="progress"><div style="width:50%"></div></div>
+    <div class="card task-card">
+      <h2>Finger Tapping Test</h2>
+      <p class="instructions"><b>Tap the button as fast as you can for 10 seconds.</b></p>
+
+      <div class="input-area" style="text-align:center">
+        <div class="controls" style="margin-bottom:12px; flex-direction:column; display:flex; align-items:center;">
+          <button class="btn" id="start" style="margin-bottom:10px;">Start 10s</button>
+
+          <!-- New label for clarity -->
+          <label for="tap" style="margin-bottom:6px; font-weight:600; font-size:1rem;">
+            Tap this button as fast as you can!
+          </label>
+
+          <button class="btn secondary" id="tap" disabled>Tap Here!</button>
+        </div>
+
+        <div style="font-size:2rem;font-weight:bold" id="count">0</div>
+        <p class="notice" id="status">Press Start to begin.</p>
+      </div>
+
+      <!-- Recall Section (hidden until tapping ends) -->
+      <div id="recall-section" style="display:none; margin-top:20px;">
+        <h3>Memory Recall</h3>
+        <p><b>Please recall the 5 words you memorized in Task 2.</b>  
+        You have <b>30 seconds</b> to answer aloud.</p>
+
+        <div class="controls">
+          <button class="btn" id="startRec"> Start Recall Recording</button>
+          <button class="btn secondary" id="stopRec" disabled>Stop</button>
+          <button class="btn secondary" id="saveRec" disabled>Save</button>
+        </div>
+
+        <!-- Timer for recall -->
+        <div style="margin-top:8px">
+          <progress id="recProgress" value="0" max="30" style="width:200px"></progress>
+          <span id="recTimer">0s</span>
+        </div>
+
+        <audio id="playback" controls style="display:none;margin-top:10px"></audio>
+        <p id="recStatus" class="notice"></p>
+      </div>
+
+      <div class="controls" style="margin-top:20px">
+        <button class="btn secondary" onclick="navTo('task5.html')">Next Task →</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../app.js"></script>
+  <script>
+    // ====== Finger Tapping Test ======
+    let active = false, count = 0, t0 = 0, taps = [], timer = null;
+
+    qi('start').onclick = () => {
+      count = 0; taps = []; active = true; 
+      t0 = performance.now();
+      qi('tap').disabled = false;
+      qi('status').textContent = '⏱ Go! Tap quickly!';
+      qi('count').textContent = '0';
+      clearTimeout(timer);
+
+      // Auto-stop after 10s
+      timer = setTimeout(() => {
+        active = false;
+        qi('tap').disabled = true;
+        const duration = (performance.now() - t0) / 1000;
+        setResult('task4_tapping', { count, duration, taps });
+        qi('status').textContent = `Done! You tapped ${count} times in 10s.`;
+
+        // Show memory recall section
+        qi('recall-section').style.display = 'block';
+      }, 10000);
+    };
+
+    qi('tap').onclick = () => {
+      if (!active) return;
+      count++;
+      taps.push(performance.now() - t0);
+      qi('count').textContent = String(count);
+    };
+
+    // ====== Memory Recall Recording ======
+    const startBtn = qi('startRec');
+    const stopBtn  = qi('stopRec');
+    const saveBtn  = qi('saveRec');
+    const playback = qi('playback');
+    const statusEl = qi('recStatus');
+    const timerEl  = qi('recTimer');
+    const progressEl = qi('recProgress');
+
+    let rec = new MicRecorder(progressEl, timerEl);
+    let recData = null;
+
+    startBtn.onclick = async () => {
+      await rec.start(30); // 30 seconds max recall time
+      statusEl.textContent = " Recording your recall...";
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+    };
+
+    stopBtn.onclick = async () => {
+      recData = await rec.stop();
+      if (recData) {
+        playback.src = recData.url;
+        playback.style.display = "block";
+        statusEl.textContent = ` Recall recording stopped (${recData.durSec}s).`;
+        saveBtn.disabled = false;
+      }
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    };
+
+    saveBtn.onclick = () => {
+      if (recData) {
+        setResult('task4_memory_recall', { durSec: recData.durSec });
+        downloadBlob(recData.blob, 'task4_memory_recall.webm');
+        statusEl.textContent = "📝 Recall saved!";
+      } else {
+        alert('Please record first.');
+      }
+    };
+  </script>
+</body>
+</html>

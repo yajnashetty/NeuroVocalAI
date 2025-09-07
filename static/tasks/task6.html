@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en" data-automic="true">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Task 6 — Pa–Ta–Ka Repetition or Reading</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <a class="link" href="../index.html">← Home</a>
+      <div style="min-width:220px;flex:1"></div>
+      <div style="font-weight:700">Task 6 of 8</div>
+    </div>
+    <div class="progress"><div style="width:75%"></div></div>
+    <div class="card task-card">
+      <h2>Repetition and Reading</h2>
+      <p class="instructions"><b>Follow the instructions below, then record or interact as asked. When done, click Save and then Next Task.</b></p>
+      
+      <div class="input-area">
+        <p>You can choose one option:</p>
+        <ol>
+          <li><b>Option A:</b> Repeat "<b>pa-ta-ka</b>" as quickly and clearly as possible for 10 seconds.</li>
+          <li><b>Option B:</b> Read aloud: "<i>The quick brown fox jumps over the lazy dog.</i>"</li>
+        </ol>
+
+        <div class="controls">
+          <button class="btn" id="startRec">Start Recording</button>
+          <button class="btn secondary" id="stopRec" disabled>Stop</button>
+          <button class="btn secondary" id="saveRec" disabled>Save</button>
+        </div>
+
+        <!-- Timer and progress bar -->
+        <div style="margin-top:8px">
+          <progress id="recProgress" value="0" max="15" style="width:200px"></progress>
+          <span id="recTimer">0s</span>
+        </div>
+
+        <audio id="playback" controls style="display:none;margin-top:10px"></audio>
+        <p id="recStatus" class="notice"></p>
+      </div>
+
+      <!-- ===== Subtask: Rainbow Passage ===== -->
+      <div class="input-area" style="margin-top:30px;">
+        <h3>🌈 Rainbow Passage </h3>
+        <p><i>
+          When the sunlight strikes raindrops in the air, they act like a prism and form a rainbow.  
+          A rainbow is a division of white light into many beautiful colors.  
+          These colors are spread out into a long band in the sky.
+        </i></p>
+
+        <div class="controls">
+          <button class="btn" id="startRecRainbow">Start Recording</button>
+          <button class="btn secondary" id="stopRecRainbow" disabled>Stop</button>
+          <button class="btn secondary" id="saveRecRainbow" disabled>Save</button>
+        </div>
+
+        <!-- Timer and progress bar for Rainbow -->
+        <div style="margin-top:8px">
+          <progress id="recProgressRainbow" value="0" max="30" style="width:200px"></progress>
+          <span id="recTimerRainbow">0s</span>
+        </div>
+
+        <audio id="playbackRainbow" controls style="display:none;margin-top:10px"></audio>
+        <p id="recStatusRainbow" class="notice"></p>
+      </div>
+
+      <div class="controls" style="margin-top:20px">
+        <button class="btn secondary" onclick="navTo('task7.html')">Next Task →</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../app.js"></script>
+  <script>
+    // ====== Original Recording Controls (15s max) ======
+    const startBtn = qi('startRec');
+    const stopBtn  = qi('stopRec');
+    const saveBtn  = qi('saveRec');
+    const playback = qi('playback');
+    const statusEl = qi('recStatus');
+    const timerEl  = qi('recTimer');
+    const progressEl = qi('recProgress');
+
+    let rec = new MicRecorder(progressEl, timerEl);
+    let recData = null;
+
+    startBtn.onclick = async () => {
+      await rec.start();
+      statusEl.textContent = " Recording...";
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      saveBtn.disabled = true;
+
+      // Auto-stop after 15 seconds
+      setTimeout(async () => {
+        if (!stopBtn.disabled) {
+          recData = await rec.stop();
+          if (recData) {
+            playback.src = recData.url;
+            playback.style.display = "block";
+            statusEl.textContent = ` Recording automatically stopped after 15s.`;
+            saveBtn.disabled = false;
+          }
+          startBtn.disabled = false;
+          stopBtn.disabled = true;
+        }
+      }, 15000);
+    };
+
+    stopBtn.onclick = async () => {
+      recData = await rec.stop();
+      if (recData) {
+        playback.src = recData.url;
+        playback.style.display = "block";
+        statusEl.textContent = ` Recording stopped (${recData.durSec}s).`;
+        saveBtn.disabled = false;
+      }
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    };
+
+    saveBtn.onclick = () => {
+      if (recData) {
+        setResult('task6_articulation', { durSec: recData.durSec });
+        downloadBlob(recData.blob, 'task6_articulation.webm');
+        statusEl.textContent = "📝 Recording saved!";
+      } else {
+        alert('Please record first.');
+      }
+    };
+
+    // ====== Rainbow Passage Recording Controls (30s max) ======
+    const startBtnR = qi('startRecRainbow');
+    const stopBtnR  = qi('stopRecRainbow');
+    const saveBtnR  = qi('saveRecRainbow');
+    const playbackR = qi('playbackRainbow');
+    const statusElR = qi('recStatusRainbow');
+    const timerElR  = qi('recTimerRainbow');
+    const progressElR = qi('recProgressRainbow');
+
+    let recR = new MicRecorder(progressElR, timerElR);
+    let recDataR = null;
+
+    startBtnR.onclick = async () => {
+      await recR.start(30);
+      statusElR.textContent = " 🎙 Recording Rainbow Passage...";
+      startBtnR.disabled = true;
+      stopBtnR.disabled = false;
+      saveBtnR.disabled = true;
+
+      // Auto-stop after 30 seconds
+      setTimeout(async () => {
+        if (!stopBtnR.disabled) {
+          recDataR = await recR.stop();
+          if (recDataR) {
+            playbackR.src = recDataR.url;
+            playbackR.style.display = "block";
+            statusElR.textContent = ` Recording automatically stopped after 30s.`;
+            saveBtnR.disabled = false;
+          }
+          startBtnR.disabled = false;
+          stopBtnR.disabled = true;
+        }
+      }, 30000);
+    };
+
+    stopBtnR.onclick = async () => {
+      recDataR = await recR.stop();
+      if (recDataR) {
+        playbackR.src = recDataR.url;
+        playbackR.style.display = "block";
+        statusElR.textContent = ` Recording stopped (${recDataR.durSec}s).`;
+        saveBtnR.disabled = false;
+      }
+      startBtnR.disabled = false;
+      stopBtnR.disabled = true;
+    };
+
+    saveBtnR.onclick = () => {
+      if (recDataR) {
+        setResult('task6_rainbow', { durSec: recDataR.durSec });
+        downloadBlob(recDataR.blob, 'task6_rainbow.webm');
+        statusElR.textContent = "📝 Rainbow Passage saved!";
+      } else {
+        alert('Please record first.');
+      }
+    };
+  </script>
+</body>
+</html>

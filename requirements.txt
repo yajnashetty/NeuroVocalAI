@@ -1,0 +1,11 @@
+flask
+tensorflow
+scikit-learn==1.7.1
+joblib
+pandas
+librosa
+parselmouth-praat
+pydub
+soundfile
+numpy
+gunicorn
